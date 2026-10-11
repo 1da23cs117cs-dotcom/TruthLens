@@ -1,0 +1,80 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthLens | AI Image Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <a class="logo" href="/">TruthLens<span>.</span></a>
+        <span class="nav-label">AI IMAGE VERIFICATION</span>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <p class="eyebrow">TRUTH, BEYOND THE PIXELS</p>
+            <h1>Can you trust<br>what you <span>see?</span></h1>
+            <p class="subtitle">
+                Upload an image and let our AI model analyze whether
+                it appears real or fake.
+            </p>
+        </section>
+
+        <section class="upload-card">
+            <div class="upload-icon">↑</div>
+            <h2>Analyze an image</h2>
+            <p class="hint">Choose a JPG, PNG, JPEG, or WEBP image.</p>
+
+            <form action="/" method="POST" enctype="multipart/form-data">
+                <label class="file-label" for="image">Choose image</label>
+                <input type="file" id="image" name="image"
+                       accept=".jpg,.jpeg,.png,.webp" required>
+                <p id="file-name">No image selected</p>
+                <button type="submit">Analyze image <span>→</span></button>
+            </form>
+
+            {% if error %}
+                <div class="message error">{{ error }}</div>
+            {% endif %}
+
+            {% if prediction %}
+                <div class="result">
+                    {% if image_url %}
+                        <img class="preview" src="{{ image_url }}" alt="Uploaded image">
+                    {% endif %}
+                    <p class="eyebrow">ANALYSIS RESULT</p>
+                    <h2 class="{% if prediction|upper == 'REAL' %}real{% else %}fake{% endif %}">
+                        {{ prediction|upper }}
+                    </h2>
+                    <p>Model confidence: <strong>{{ confidence }}%</strong></p>
+                    <p class="disclaimer">
+                        This is an AI model prediction, not a guarantee of authenticity.
+                    </p>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="info">
+            <div><strong>01</strong><h3>Upload</h3><p>Select an image from your device.</p></div>
+            <div><strong>02</strong><h3>Analyze</h3><p>ResNet-18 processes the image.</p></div>
+            <div><strong>03</strong><h3>Review</h3><p>See the predicted class and confidence.</p></div>
+        </section>
+    </main>
+
+    <footer>TruthLens · AI-assisted image analysis</footer>
+
+    <script>
+        const imageInput = document.getElementById("image");
+        const fileName = document.getElementById("file-name");
+
+        imageInput.addEventListener("change", function () {
+            fileName.textContent = this.files.length
+                ? this.files[0].name
+                : "No image selected";
+        });
+    </script>
+</body>
+</html>
