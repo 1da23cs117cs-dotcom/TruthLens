@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthLens | AI Audio Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    
+<header class="navbar">
+    <a class="logo" href="/">TruthLens<span>.</span></a>
+
+    <nav style="display: flex; align-items: center; gap: 20px;">
+        <a href="/"
+           style="color: #6554e8; text-decoration: none; font-weight: 600;">
+            Image Detection
+        </a>
+
+        <a href="/audio"
+           style="color: #6554e8; text-decoration: none; font-weight: 600;">
+            Audio Detection
+        </a>
+    </nav>
+</header>
+
+
+    <main class="container">
+        <section class="hero">
+            <p class="eyebrow">TRUTH, BEYOND THE VOICE</p>
+            <h1>Can you trust<br>what you <span>hear?</span></h1>
+            <p class="subtitle">
+                Upload an audio recording and let our AI model analyze
+                whether it appears real or AI-generated.
+            </p>
+        </section>
+
+        <section class="upload-card">
+            <div class="upload-icon">↑</div>
+            <h2>Analyze audio</h2>
+            <p class="hint">Choose a WAV, MP3, M4A, OGG, FLAC, AAC, or WEBM file.</p>
+
+            <form action="/audio" method="POST" enctype="multipart/form-data">
+                <label class="file-label" for="audio">Choose audio</label>
+                <input
+                    type="file"
+                    id="audio"
+                    name="audio"
+                    accept=".wav,.mp3,.m4a,.ogg,.flac,.aac,.webm"
+                    required
+                >
+
+                <p id="file-name">No audio selected</p>
+
+                <button type="submit">
+                    Analyze audio <span>→</span>
+                </button>
+            </form>
+
+            {% if error %}
+                <div class="message error">{{ error }}</div>
+            {% endif %}
+
+            {% if prediction %}
+                <div class="result">
+                    <p class="eyebrow">ANALYSIS RESULT</p>
+
+                    <h2 class="{% if prediction|upper == 'REAL' %}real{% else %}fake{% endif %}">
+                        {{ prediction|upper }}
+                    </h2>
+
+                    {% if audio_filename %}
+                        <p>
+                            File:
+                            <strong>{{ audio_filename }}</strong>
+                        </p>
+                        <audio controls style="width: 100%; margin: 16px 0;">
+                            <source
+                                src="{{ url_for('static', filename='uploads/audio/' ~ audio_filename) }}"
+                            >
+                            Your browser does not support audio playback.
+                        </audio>
+                    {% endif %}
+
+                    <p>Model score: <strong>{{ confidence }}%</strong></p>
+
+                    <p class="disclaimer">
+                        This is an AI model prediction, not a guarantee
+                        that the recording is authentic or manipulated.
+                    </p>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="info">
+            <div>
+                <strong>01</strong>
+                <h3>Upload</h3>
+                <p>Select an audio recording from your device.</p>
+            </div>
+            <div>
+                <strong>02</strong>
+                <h3>Analyze</h3>
+                <p>The audio model examines the recording.</p>
+            </div>
+            <div>
+                <strong>03</strong>
+                <h3>Review</h3>
+                <p>See the predicted class and model score.</p>
+            </div>
+        </section>
+
+        <p style="text-align: center; margin: 24px 0;">
+            <a href="/" style="color: #6554e8; text-decoration: none;">
+                ← Back to image detection
+            </a>
+        </p>
+    </main>
+
+    <footer>TruthLens · AI-assisted audio analysis</footer>
+
+    <script>
+        const audioInput = document.getElementById("audio");
+        const fileName = document.getElementById("file-name");
+
+        audioInput.addEventListener("change", function () {
+            fileName.textContent = this.files.length
+                ? this.files[0].name
+                : "No audio selected";
+        });
+    </script>
+</body>
+</html>
