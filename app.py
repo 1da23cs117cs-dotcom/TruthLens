@@ -9,6 +9,9 @@ from PIL import Image
 from torch import nn
 from torchvision import models, transforms
 
+# Added for audio detection
+from src.audio_detector import predict_audio
+
 
 # --------------------------------------------------
 # 1. Flask application configuration
@@ -34,6 +37,20 @@ ALLOWED_EXTENSIONS = {
     ".webp",
 }
 
+# Added for audio detection
+ALLOWED_AUDIO_EXTENSIONS = {
+    ".wav",
+    ".mp3",
+    ".m4a",
+    ".ogg",
+    ".flac",
+    ".aac",
+    ".webm",
+}
+
+AUDIO_UPLOAD_DIR = UPLOAD_DIR / "audio"
+AUDIO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
 
 
@@ -50,7 +67,7 @@ class_names = None
 
 
 # --------------------------------------------------
-# 3. Load the trained model
+# 3. Load the trained IMAGE model
 # --------------------------------------------------
 
 def load_model():
@@ -108,7 +125,7 @@ transform = transforms.Compose([
 
 
 # --------------------------------------------------
-# 5. Predict whether an image is REAL or FAKE
+# 5. Predict whether an IMAGE is REAL or FAKE
 # --------------------------------------------------
 
 def predict_image(image_path):
@@ -135,7 +152,7 @@ def predict_image(image_path):
 
 
 # --------------------------------------------------
-# 6. Home page and image upload
+# 6. Home page and IMAGE upload (UNCHANGED)
 # --------------------------------------------------
 
 @app.route("/", methods=["GET", "POST"])
@@ -202,11 +219,81 @@ def index():
 
 
 # --------------------------------------------------
-# 7. Handle oversized uploads
+# 7. AUDIO deepfake detection (NEW)
+# --------------------------------------------------
+
+@app.route("/audio", methods=["GET", "POST"])
+def audio():
+    prediction = None
+    confidence = None
+    audio_filename = None
+    error = None
+
+    if request.method == "POST":
+        uploaded_file = request.files.get("audio")
+
+        if uploaded_file is None or not uploaded_file.filename:
+            error = "Please select an audio file to analyze."
+
+        elif (
+            Path(uploaded_file.filename).suffix.lower()
+            not in ALLOWED_AUDIO_EXTENSIONS
+        ):
+            error = (
+                "Unsupported audio format. Upload WAV, MP3, M4A, "
+                "OGG, FLAC, AAC, or WEBM."
+            )
+
+        else:
+            filename = secure_filename(uploaded_file.filename)
+
+            if not filename:
+                error = "Invalid filename. Please try another audio file."
+
+            else:
+                save_path = AUDIO_UPLOAD_DIR / filename
+
+                try:
+                    uploaded_file.save(save_path)
+
+                    prediction, confidence = predict_audio(save_path)
+                    audio_filename = filename
+
+                except Exception:
+                    app.logger.exception("Audio prediction failed.")
+
+                    error = (
+                        "Unable to analyze this audio. "
+                        "Please check the file and try again."
+                    )
+
+                    if save_path.exists():
+                        save_path.unlink(missing_ok=True)
+
+    return render_template(
+        "audio.html",
+        prediction=prediction,
+        confidence=confidence,
+        audio_filename=audio_filename,
+        error=error,
+    )
+
+
+# --------------------------------------------------
+# 8. Handle oversized uploads
 # --------------------------------------------------
 
 @app.errorhandler(413)
 def file_too_large(error):
+    if request.path == "/audio":
+        return render_template(
+            "audio.html",
+            prediction=None,
+            confidence=None,
+            audio_filename=None,
+            error="Audio is too large. Maximum upload size is 10 MB.",
+        ), 413
+
     return render_template(
         "index.html",
         prediction=None,
@@ -216,13 +303,23 @@ def file_too_large(error):
     ), 413
 
 
+
+
 # --------------------------------------------------
-# 8. Start the Flask server
+# 9. Start the Flask server
 # --------------------------------------------------
 
 if __name__ == "__main__":
+    print("\n===================================")
+    print("       TruthLens is running")
+    print("===================================")
+    print("Image Detection: http://127.0.0.1:5000/")
+    print("Audio Detection: http://127.0.0.1:5000/audio")
+    print("===================================\n")
+
     app.run(
         host="127.0.0.1",
         port=5000,
         debug=True,
+        use_reloader=False,
     )
