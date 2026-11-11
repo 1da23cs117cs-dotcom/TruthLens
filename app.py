@@ -366,7 +366,6 @@ def video():
 
 @app.errorhandler(413)
 def file_too_large(error):
-
     if request.path == "/audio":
         return render_template(
             "audio.html",
